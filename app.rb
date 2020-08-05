@@ -1,3 +1,5 @@
+require_relative "time_formatter"
+
 class App
 
     ALL_FORMATS = ['year', 'month', 'day', 'hour', 'min', 'sec']
@@ -21,47 +23,35 @@ class App
     end
   end
 
-  def false_path?
-    true if @path != '/time'
-  end
-
-  def false_format?
-    check_formats
-
-    true if !@format_error.empty?
-  end
-
-  def check_formats
-    format = @query.gsub('format=', '').chomp('%').split('%2C')
-
-    time = Time.now
-    time_hash = {}
-
-    ALL_FORMATS.each do |form|
-      time_hash[form] = time.send(form)
-    end
-
-    @time_output = []
-    @format_error = []
-
-    format.each do |form|
-      if time_hash.keys.include?(form)
-        @time_output << time_hash[form]
-      else
-        @format_error << form
-      end
-    end
-  end
-
   def headers
     {'Content-Type' => 'text/plain'}
   end
 
   def body
-    if @format_error.any?
-      ["Unknown time format [#{@format_error.join(',')}]"]
-    else
-      [@time_output.join('-')]
+    time_formatter = TimeFormatter.new(@format_true, @format_error)
+    time_formatter.time
+  end
+
+  private
+
+  def false_path?
+    true if @path != '/time'
+  end
+
+  def false_format?
+    @format = @query.gsub('format=', '').chomp('%').split('%2C')
+
+    @format_true = []
+    @format_error = []
+
+    @format.each do |form|
+      if ALL_FORMATS.include?(form)
+        @format_true << form
+      else
+        @format_error << form
+      end
     end
+
+    true if !@format_error.empty?
   end
 end
