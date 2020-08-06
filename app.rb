@@ -2,24 +2,31 @@ require_relative "time_formatter"
 
 class App
 
-    ALL_FORMATS = ['year', 'month', 'day', 'hour', 'min', 'sec']
-
   def call(env)
     @path = env['PATH_INFO']
     @query = env['QUERY_STRING']
 
-    [status, headers, body]
+    if false_path?
+      status = 404
+      body = ['Change query']
+      response(status, body)
+    else
+      time_formatter = TimeFormatter.new(@query)
+      time_formatter.call
+      time_formatter.create_body
+      @headers = {'Content-Type' => 'text/plain'}
+      [status, headers, body]
+    end
+
   end
 
   private
 
   def status
-    if false_path?
-      404
-    elsif false_format?
-      400
-    else
+    if time_formatter.success?
       200
+    else
+      400
     end
   end
 
@@ -28,8 +35,7 @@ class App
   end
 
   def body
-    time_formatter = TimeFormatter.new(@format_true, @format_error)
-    time_formatter.time
+    time_formatter.body
   end
 
   private
@@ -38,20 +44,8 @@ class App
     true if @path != '/time'
   end
 
-  def false_format?
-    @format = @query.gsub('format=', '').chomp('%').split('%2C')
-
-    @format_true = []
-    @format_error = []
-
-    @format.each do |form|
-      if ALL_FORMATS.include?(form)
-        @format_true << form
-      else
-        @format_error << form
-      end
-    end
-
-    true if !@format_error.empty?
+  def response(status, body)
+    Rack::Response.status = status
+    Rack::Response.body = body
   end
 end
