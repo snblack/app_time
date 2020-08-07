@@ -3,13 +3,12 @@ require_relative "time_formatter"
 class App
 
   def call(env)
-    @path = env['PATH_INFO']
-    @query = env['QUERY_STRING']
+    query = env['QUERY_STRING']
 
-    if false_path?
+    if false_path?(env['PATH_INFO'])
       response(404, ['Change query'])
     else
-      formatter = TimeFormatter.new(@query)
+      formatter = TimeFormatter.new(query)
       formatter.call
 
       if formatter.valid?
@@ -21,16 +20,14 @@ class App
 
   end
 
-  private
-
   def headers
     {'Content-Type' => 'text/plain'}
   end
 
   private
 
-  def false_path?
-    true if @path != '/time'
+  def false_path?(path)
+    true if path != '/time'
   end
 
   def response(status, body)
