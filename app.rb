@@ -7,35 +7,24 @@ class App
     @query = env['QUERY_STRING']
 
     if false_path?
-      status = 404
-      body = ['Change query']
-      response(status, body)
+      response(404, ['Change query'])
     else
-      time_formatter = TimeFormatter.new(@query)
-      time_formatter.call
-      time_formatter.create_body
-      @headers = {'Content-Type' => 'text/plain'}
-      [status, headers, body]
+      formatter = TimeFormatter.new(@query)
+      formatter.call
+
+      if formatter.valid?
+        response(200, formatter.valid_string)
+      else
+        response(400, formatter.invalid_string)
+      end
     end
 
   end
 
   private
 
-  def status
-    if time_formatter.success?
-      200
-    else
-      400
-    end
-  end
-
   def headers
     {'Content-Type' => 'text/plain'}
-  end
-
-  def body
-    time_formatter.body
   end
 
   private
@@ -45,7 +34,10 @@ class App
   end
 
   def response(status, body)
-    Rack::Response.status = status
-    Rack::Response.body = body
+    response = Rack::Response.new
+    response.status = status
+    response.body = body
+    response.header = self.header
+    response.finish
   end
 end
